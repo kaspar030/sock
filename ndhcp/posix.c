@@ -10,6 +10,10 @@
 
 #include "ndhcpc.h"
 
+#ifndef NDHCP_SCRIPT
+#define NDHCP_SCRIPT "/tmp/ndhcpc.script"
+#endif
+
 int ndhcpc_get_l2addr(unsigned iface, uint8_t *dst)
 {
     struct ifreq ifr;
@@ -70,5 +74,5 @@ void ndhcpc_handle_lease(dhcp_lease_t *lease)
     _setenv_ipaddr("IPV4_GATEWAY", lease->gw);
     _setenv_ipaddr("IPV4_DNS", lease->dns);
     _setenv_int("IPV4_MTU", lease->mtu);
-    system("sh -c set");
+    system(NDHCP_SCRIPT);
 }

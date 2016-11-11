@@ -15,8 +15,6 @@ int main(int argc, char *argv[])
 
     unsigned ifindex = if_nametoindex(argv[1]);
 
-    printf("%u\n", ifindex);
-
     ndhcpc_t ndhcpc;
     ndhcpc_init(&ndhcpc, ifindex, 0x12345678);
     ndhcpc_loop(&ndhcpc);

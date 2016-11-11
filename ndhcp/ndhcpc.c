@@ -17,8 +17,8 @@ int ndhcpc_init(ndhcpc_t *n, unsigned iface, uint32_t xid)
     n->iface = iface;
     n->xid = htonl(xid);
 
-    sock_udp_ep_t src = { .family = AF_INET, .addr.ipv4=INADDR_ANY, .port=68 };
-    sock_udp_ep_t dst = { .family = AF_INET, .addr.ipv4=INADDR_BROADCAST, .port=67, .netif=iface };
+    sock_udp_ep_t src = { .family = AF_INET, .addr.ipv4_u32=INADDR_ANY, .port=68 };
+    sock_udp_ep_t dst = { .family = AF_INET, .addr.ipv4_u32=INADDR_BROADCAST, .port=67, .netif=iface };
 
     if (sock_udp_create(&n->sock, &src, &dst, 0) < 0) {
         fprintf(stderr, "ndhcpc: error creating socket.\n");
@@ -69,6 +69,8 @@ static uint8_t *_opt_put(uint8_t *ptr, uint8_t type, void *data, size_t len)
 
 static void _send_request(ndhcpc_t *n, uint8_t *buf, size_t len)
 {
+    (void)len;
+
     _create_pkt(n, buf, 0, 1);
     dhcp_pkt_t *pkt = (dhcp_pkt_t *)buf;
 

@@ -47,7 +47,7 @@ static int _endpoint_to_sockaddr(void *sockaddr, const sock_udp_ep_t *endpoint)
                 dst_addr->sin_family = AF_INET;
                 dst_addr->sin_port = htons(endpoint->port);
                 if (endpoint->addr.ipv4) {
-                    dst_addr->sin_addr.s_addr = endpoint->addr.ipv4;
+                    memcpy(&dst_addr->sin_addr.s_addr, endpoint->addr.ipv4, 4);
                 }
                 else {
                     dst_addr->sin_addr.s_addr = INADDR_ANY;
@@ -90,7 +90,7 @@ static int _sockaddr_to_endpoint(sock_udp_ep_t *endpoint, void *_sockaddr)
                 struct sockaddr_in *addr = (struct sockaddr_in*) sockaddr;
                 endpoint->family = AF_INET;
                 endpoint->port = ntohs(addr->sin_port);
-                endpoint->addr.ipv4 = addr->sin_addr.s_addr;
+                memcpy(endpoint->addr.ipv4, &addr->sin_addr.s_addr, 4);
                 return 0;
             }
 #endif
@@ -108,6 +108,16 @@ static int _sockaddr_to_endpoint(sock_udp_ep_t *endpoint, void *_sockaddr)
         default:
             return -EINVAL;
     }
+}
+
+int _udp_connect_possible(const sock_udp_ep_t *remote)
+{
+    if (remote->family == AF_INET) {
+        if (remote->addr.ipv4_u32 == 0xFFFFFFFF) {
+            return 0;
+        }
+    }
+    return 1;
 }
 
 int sock_udp_create(sock_udp_t *sock, const sock_udp_ep_t *local, const sock_udp_ep_t *remote, uint16_t flags)
@@ -152,7 +162,7 @@ int sock_udp_create(sock_udp_t *sock, const sock_udp_ep_t *local, const sock_udp
         memset((void*)&local_addr, '\0', sizeof(local_addr));
         _endpoint_to_sockaddr(&local_addr, local);
 
-        if (!remote) {
+        if (!remote || (!_udp_connect_possible(remote))) {
             unsigned addr_len = _addrlen(sock->family);
 
             const int on=1;
@@ -187,10 +197,12 @@ int sock_udp_create(sock_udp_t *sock, const sock_udp_ep_t *local, const sock_udp
             sock->family = remote->family;
         }
 
-        if ((connect(sock->fd, (struct sockaddr *)&remote_addr, addr_len)) == -1 ) {
-            res = -1;
-            perror("connect");
-            goto close;
+        if (_udp_connect_possible(remote)) {
+            if ((connect(sock->fd, (struct sockaddr *)&remote_addr, addr_len)) == -1 ) {
+                res = -1;
+                perror("connect");
+                goto close;
+            }
         }
 
         if ((res = _set_remote(sock, remote))) {
@@ -255,7 +267,7 @@ static int _set_remote(sock_udp_t *sock, const sock_udp_ep_t *dst)
 
 #if defined(SOCK_HAS_IPV4)
     if (dst->family == AF_INET) {
-        if  (dst->addr.ipv4 == 0xFFFFFFFF) {
+        if  (dst->addr.ipv4_u32 == 0xFFFFFFFF) {
             int enable = 1;
             if (setsockopt(sock->fd, SOL_SOCKET, SO_BROADCAST, &enable, sizeof(enable)) == -1) {
                 perror("enabling broadcast");
