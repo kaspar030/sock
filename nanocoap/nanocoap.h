@@ -13,14 +13,16 @@
 #endif
 
 #define COAP_PORT               (5683)
-#define NANOCOAP_URL_MAX        (64)
-#define NANOCOAP_QS_MAX         (64)
+#define NANOCOAP_NOPTS_MAX      (16)
+#define NANOCOAP_URI_MAX        (64)
 
 #define COAP_OPT_URI_HOST       (3)
 #define COAP_OPT_OBSERVE        (6)
 #define COAP_OPT_URI_PATH       (11)
 #define COAP_OPT_CONTENT_FORMAT (12)
 #define COAP_OPT_URI_QUERY      (15)
+#define COAP_OPT_BLOCK2         (23)
+#define COAP_OPT_BLOCK1         (27)
 
 #define COAP_REQ                (0)
 #define COAP_RESP               (2)
@@ -68,8 +70,10 @@
 #define COAP_CODE_DELETED      ((2<<5) | 2)
 #define COAP_CODE_VALID        ((2<<5) | 3)
 #define COAP_CODE_CHANGED      ((2<<5) | 4)
+#define COAP_CODE_204          ((2<<5) | 4)
 #define COAP_CODE_CONTENT      ((2<<5) | 5)
 #define COAP_CODE_205          ((2<<5) | 5)
+#define COAP_CODE_231          ((2<<5) | 31)
 /** @} */
 /**
  * @name Response message codes: client error
@@ -142,14 +146,17 @@ typedef struct {
 } coap_hdr_t;
 
 typedef struct {
+    uint16_t opt_num;
+    uint16_t offset;
+} coap_optpos_t;
+
+typedef struct {
     coap_hdr_t *hdr;
-    uint8_t url[NANOCOAP_URL_MAX];
-    uint8_t qs[NANOCOAP_QS_MAX];
     uint8_t *token;
     uint8_t *payload;
-    unsigned payload_len;
-    uint16_t content_type;
-    uint32_t observe_value;
+    uint16_t payload_len;
+    uint16_t options_len;
+    coap_optpos_t options[NANOCOAP_NOPTS_MAX];
 } coap_pkt_t;
 
 typedef ssize_t (*coap_handler_t)(coap_pkt_t* pkt, uint8_t *buf, size_t len);
@@ -220,6 +227,8 @@ static inline unsigned coap_get_id(coap_pkt_t *pkt)
     return ntohs(pkt->hdr->id);
 }
 
+unsigned coap_get_len(coap_pkt_t *pkt);
+
 static inline unsigned coap_get_total_hdr_len(coap_pkt_t *pkt)
 {
     return sizeof(coap_hdr_t) + coap_get_token_len(pkt);
@@ -247,30 +256,6 @@ static inline void coap_hdr_set_type(coap_hdr_t *hdr, unsigned type)
 static inline unsigned coap_method2flag(unsigned code)
 {
     return (1<<(code-1));
-}
-
-/**
- * @brief  Identifies a packet containing an Observe option.
- */
-static inline bool coap_has_observe(coap_pkt_t *pkt)
-{
-    return pkt->observe_value != UINT32_MAX;
-}
-
-/**
- * @brief  Clears the Observe option value from a packet.
- */
-static inline void coap_clear_observe(coap_pkt_t *pkt)
-{
-    pkt->observe_value = UINT32_MAX;
-}
-
-/**
- * @brief  Provides the value for the Observe option in a packet.
- */
-static inline uint32_t coap_get_observe(coap_pkt_t *pkt)
-{
-    return pkt->observe_value;
 }
 
 extern ssize_t coap_well_known_core_default_handler(coap_pkt_t* pkt, \
