@@ -242,6 +242,7 @@ ssize_t coap_handle_req(coap_pkt_t *pkt, uint8_t *resp_buf, unsigned resp_buf_le
 
 #ifdef MODULE_GCOAP
     uint8_t *uri = pkt->url;
+    int res;
 #else
     uint8_t uri[NANOCOAP_URI_MAX];
     int res = coap_get_uri(pkt, uri);
