@@ -181,7 +181,7 @@ int coap_get_uri(coap_pkt_t *pkt, uint8_t *target)
         return -EBADMSG;
     }
 
-    unsigned left = NANOCOAP_URI_MAXLEN - 1;
+    unsigned left = NANOCOAP_URI_MAX - 1;
     uint8_t *part_start = NULL;
     do {
         int opt_len;
@@ -199,7 +199,7 @@ int coap_get_uri(coap_pkt_t *pkt, uint8_t *target)
 
     *target = '\0';
 
-    return NANOCOAP_URI_MAXLEN - left;
+    return NANOCOAP_URI_MAX - left;
 }
 
 int coap_get_blockopt(coap_pkt_t *pkt, uint16_t option, uint32_t *blknum, unsigned *szx)
@@ -234,7 +234,7 @@ ssize_t coap_handle_req(coap_pkt_t *pkt, uint8_t *resp_buf, unsigned resp_buf_le
 
     unsigned method_flag = coap_method2flag(coap_get_code_detail(pkt));
 
-    uint8_t uri[NANOCOAP_URI_MAXLEN];
+    uint8_t uri[NANOCOAP_URI_MAX];
     int res = coap_get_uri(pkt, uri);
     if (res <= 0) {
         return -EBADMSG;

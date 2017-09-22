@@ -14,7 +14,7 @@
 
 #define COAP_PORT               (5683)
 #define NANOCOAP_NOPTS_MAX      (16)
-#define NANOCOAP_URI_MAXLEN     (64)
+#define NANOCOAP_URI_MAX        (64)
 
 #define COAP_OPT_URI_HOST       (3)
 #define COAP_OPT_OBSERVE        (6)
