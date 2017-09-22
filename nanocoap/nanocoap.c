@@ -93,6 +93,9 @@ int coap_parse(coap_pkt_t *pkt, uint8_t *buf, size_t len)
     }
 
     pkt->options_len = option_count;
+    if (!pkt->payload) {
+        pkt->payload = pkt_pos;
+    }
 
     DEBUG("coap pkt parsed. code=%u detail=%u payload_len=%u, 0x%02x\n",
             coap_get_code_class(pkt),
@@ -116,27 +119,36 @@ uint8_t *coap_find_option(coap_pkt_t *pkt, unsigned opt_num)
     return NULL;
 }
 
-uint8_t *coap_iterate_option(coap_pkt_t *pkt, uint8_t **optpos, int *opt_len)
+static uint8_t *_parse_option(coap_pkt_t *pkt, uint8_t *pkt_pos, uint16_t *delta, int *opt_len)
 {
-    uint8_t *pkt_pos = *optpos;
-    uint8_t *data_start;
-    uint8_t *pkt_end = pkt->payload;
+    uint8_t *hdr_end = pkt->payload;
+
+    if (pkt_pos == hdr_end) {
+        return NULL;
+    }
+
     uint8_t option_byte = *pkt_pos++;
 
-    *opt_len = _decode_value(option_byte & 0xf, &pkt_pos, pkt_end);
-    data_start = pkt_pos;
+    *delta = _decode_value(option_byte >> 4, &pkt_pos, hdr_end);
+    *opt_len = _decode_value(option_byte & 0xf, &pkt_pos, hdr_end);
 
-    /* check if following option exists and has zero option delta */
-    pkt_pos += *opt_len;
-    option_byte = *pkt_pos++;
-    if ((option_byte == 0xFF) || _decode_value(option_byte >> 4, &pkt_pos, pkt_end)) {
-        *optpos = NULL;
+    return pkt_pos;
+}
+
+uint8_t *coap_iterate_option(coap_pkt_t *pkt, uint8_t **optpos, int *opt_len, int first)
+{
+    uint8_t *data_start;
+
+    uint16_t delta = 0;
+    data_start = _parse_option(pkt, *optpos, &delta, opt_len);
+    if (data_start && (first || !delta)) {
+        *optpos = data_start + *opt_len;
+        return data_start;
     }
     else {
-        *optpos = data_start + *opt_len;
+        *optpos = NULL;
+        return NULL;
     }
-
-    return data_start;
 }
 
 int coap_get_uri(coap_pkt_t *pkt, uint8_t *target)
@@ -148,17 +160,20 @@ int coap_get_uri(coap_pkt_t *pkt, uint8_t *target)
     }
 
     unsigned left = NANOCOAP_URI_MAXLEN - 1;
-    while (opt_pos) {
+    uint8_t *part_start = NULL;
+    do {
         int opt_len;
-        uint8_t *part_start = coap_iterate_option(pkt, &opt_pos, &opt_len);
-        if (left < (unsigned)(opt_len + 1)) {
-            return -ENOSPC;
+        part_start = coap_iterate_option(pkt, &opt_pos, &opt_len, part_start==NULL);
+        if (part_start) {
+            if (left < (unsigned)(opt_len + 1)) {
+                return -ENOSPC;
+            }
+            *target++ = '/';
+            memcpy(target, part_start, opt_len);
+            target += opt_len;
+            left -= (opt_len + 1);
         }
-        *target++ = '/';
-        memcpy(target, part_start, opt_len);
-        target += opt_len;
-        left -= (opt_len + 1);
-    }
+    } while(opt_pos);
 
     *target = '\0';
 
@@ -478,4 +493,13 @@ ssize_t coap_well_known_core_default_handler(coap_pkt_t* pkt, uint8_t *buf, \
     unsigned payload_len = bufpos - payload;
 
     return coap_build_reply(pkt, COAP_CODE_205, buf, len, payload_len);
+}
+
+unsigned coap_get_len(coap_pkt_t *pkt)
+{
+    unsigned pktlen = sizeof(coap_hdr_t) + coap_get_token_len(pkt);
+    if (pkt->payload) {
+        pktlen += pkt->payload_len + 1;
+    }
+    return pktlen;
 }

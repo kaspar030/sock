@@ -245,6 +245,8 @@ static inline unsigned coap_get_id(coap_pkt_t *pkt)
     return ntohs(pkt->hdr->id);
 }
 
+unsigned coap_get_len(coap_pkt_t *pkt);
+
 static inline unsigned coap_get_total_hdr_len(coap_pkt_t *pkt)
 {
     return sizeof(coap_hdr_t) + coap_get_token_len(pkt);
