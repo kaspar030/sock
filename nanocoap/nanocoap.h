@@ -192,7 +192,7 @@ ssize_t coap_reply_simple(coap_pkt_t *pkt,
 
 ssize_t coap_handle_req(coap_pkt_t *pkt, uint8_t *resp_buf, unsigned resp_buf_len);
 
-int coap_get_blockopt(coap_pkt_t *pkt, uint16_t option, uint32_t *blknum, uint32_t *szx);
+int coap_get_blockopt(coap_pkt_t *pkt, uint16_t option, uint32_t *blknum, unsigned *szx);
 size_t coap_put_option_block1(uint8_t *buf, uint16_t lastonum, unsigned blknum, unsigned szx, int more);
 
 static inline unsigned coap_szx2size(unsigned szx)
