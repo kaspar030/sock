@@ -15,9 +15,35 @@ ssize_t _test_handler(coap_pkt_t* pkt, uint8_t *buf, size_t len)
     return coap_reply_simple(pkt, COAP_CODE_205, buf, len, COAP_FORMAT_TEXT, (uint8_t*)payload, 4);
 }
 
+ssize_t _blockwise_handler(coap_pkt_t* pkt, uint8_t *buf, size_t len)
+{
+    printf("_blockwise_handler()\n");
+
+    uint32_t result = COAP_CODE_204;
+    uint32_t blknum;
+    uint32_t szx;
+    int res = coap_get_blockopt(pkt, COAP_OPT_BLOCK1, &blknum, &szx);
+    if (res >= 0) {
+        printf("blknum=%u blksize=%u more=%u\n", blknum, coap_szx2size(szx), res);
+        size_t offset = blknum << (szx + 4);
+        printf("received bytes %u-%u\n", (unsigned)offset, (unsigned)offset+pkt->payload_len);
+        if (res) {
+            result = COAP_CODE_231;
+        }
+    }
+
+    ssize_t reply_len = coap_build_reply(pkt, result, buf, len, 0);
+    uint8_t *pkt_pos = (uint8_t*)pkt->hdr + reply_len;
+    if (res >= 0) {
+        pkt_pos += coap_put_option_block1(pkt_pos, 0, blknum, szx, res);
+    }
+    return pkt_pos - (uint8_t*)pkt->hdr;
+}
+
 const coap_resource_t coap_resources[] = {
     COAP_WELL_KNOWN_CORE_DEFAULT_HANDLER,
     { "/test", COAP_GET, _test_handler },
+    { "/blockwise", COAP_GET | COAP_POST | COAP_PUT, _blockwise_handler },
 };
 
 const unsigned coap_resources_numof = sizeof(coap_resources) / sizeof(coap_resources[0]);
