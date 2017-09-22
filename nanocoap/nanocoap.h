@@ -167,6 +167,12 @@ typedef struct {
     uint16_t payload_len;
     uint16_t options_len;
     coap_optpos_t options[NANOCOAP_NOPTS_MAX];
+#ifdef MODULE_GCOAP
+    uint8_t url[NANOCOAP_URI_MAX];
+    uint8_t qs[NANOCOAP_QS_MAX];
+    uint16_t content_type;
+    uint32_t observe_value;
+#endif
 } coap_pkt_t;
 
 typedef ssize_t (*coap_handler_t)(coap_pkt_t* pkt, uint8_t *buf, size_t len);
@@ -196,6 +202,7 @@ int coap_get_blockopt(coap_pkt_t *pkt, uint16_t option, uint32_t *blknum, unsign
 size_t coap_put_option_block1(uint8_t *buf, uint16_t lastonum, unsigned blknum, unsigned szx, int more);
 
 unsigned coap_get_content_type(coap_pkt_t *pkt);
+int coap_get_uri(coap_pkt_t *pkt, uint8_t *target);
 
 static inline unsigned coap_szx2size(unsigned szx)
 {
@@ -277,6 +284,35 @@ static inline unsigned coap_method2flag(unsigned code)
 {
     return (1<<(code-1));
 }
+
+#ifdef MODULE_GCOAP
+#define NANOCOAP_URL_MAX        NANOCOAP_URI_MAX
+#define NANOCOAP_QS_MAX         (64)
+
+/**
+ * @brief  Identifies a packet containing an Observe option.
+ */
+static inline bool coap_has_observe(coap_pkt_t *pkt)
+{
+    return pkt->observe_value != UINT32_MAX;
+}
+
+/**
+ * @brief  Clears the Observe option value from a packet.
+ */
+static inline void coap_clear_observe(coap_pkt_t *pkt)
+{
+    pkt->observe_value = UINT32_MAX;
+}
+
+/**
+ * @brief  Provides the value for the Observe option in a packet.
+ */
+static inline uint32_t coap_get_observe(coap_pkt_t *pkt)
+{
+    return pkt->observe_value;
+}
+#endif
 
 extern ssize_t coap_well_known_core_default_handler(coap_pkt_t* pkt, \
                                                     uint8_t *buf, size_t len);

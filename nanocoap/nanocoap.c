@@ -97,6 +97,12 @@ int coap_parse(coap_pkt_t *pkt, uint8_t *buf, size_t len)
         pkt->payload = pkt_pos;
     }
 
+#ifdef MODULE_GCOAP
+    coap_get_uri(pkt, pkt->url);
+    pkt->observe_value = UINT32_MAX;
+    pkt->content_type = coap_get_content_type(pkt);
+#endif
+
     DEBUG("coap pkt parsed. code=%u detail=%u payload_len=%u, 0x%02x\n",
             coap_get_code_class(pkt),
             coap_get_code_detail(pkt),
@@ -237,11 +243,16 @@ ssize_t coap_handle_req(coap_pkt_t *pkt, uint8_t *resp_buf, unsigned resp_buf_le
 
     unsigned method_flag = coap_method2flag(coap_get_code_detail(pkt));
 
+#ifdef MODULE_GCOAP
+    uint8_t *uri = pkt->url;
+    int res;
+#else
     uint8_t uri[NANOCOAP_URI_MAX];
     int res = coap_get_uri(pkt, uri);
     if (res <= 0) {
         return -EBADMSG;
     }
+#endif
     DEBUG("nanocoap: URI path: \"%s\"\n", uri);
 
     for (unsigned i = 0; i < coap_resources_numof; i++) {
