@@ -169,7 +169,7 @@ typedef struct {
     uint16_t options_len;
     coap_optpos_t options[NANOCOAP_NOPTS_MAX];
 #ifdef MODULE_GCOAP
-    uint8_t url[NANOCOAP_URL_MAX];
+    uint8_t url[NANOCOAP_URI_MAX];
     uint8_t qs[NANOCOAP_QS_MAX];
     uint16_t content_type;
     uint32_t observe_value;
