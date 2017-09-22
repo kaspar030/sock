@@ -203,6 +203,7 @@ int coap_get_blockopt(coap_pkt_t *pkt, uint16_t option, uint32_t *blknum, unsign
 size_t coap_put_option_block1(uint8_t *buf, uint16_t lastonum, unsigned blknum, unsigned szx, int more);
 
 unsigned coap_get_content_type(coap_pkt_t *pkt);
+int coap_get_uri(coap_pkt_t *pkt, uint8_t *target);
 
 static inline unsigned coap_szx2size(unsigned szx)
 {
