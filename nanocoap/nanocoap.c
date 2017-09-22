@@ -151,6 +151,28 @@ uint8_t *coap_iterate_option(coap_pkt_t *pkt, uint8_t **optpos, int *opt_len, in
     }
 }
 
+unsigned coap_get_content_type(coap_pkt_t *pkt)
+{
+    uint8_t *opt_pos = coap_find_option(pkt, COAP_OPT_CONTENT_FORMAT);
+    unsigned content_type = 0;
+    if (opt_pos) {
+        uint16_t delta;
+        int option_len = 0;
+        uint8_t *pkt_pos = _parse_option(pkt, opt_pos, &delta, &option_len);
+
+        if (option_len == 0) {
+            content_type = 0;
+        } else if (option_len == 1) {
+            content_type = *pkt_pos;
+        } else if (option_len == 2) {
+            memcpy(&content_type, pkt_pos, 2);
+            content_type = ntohs(content_type);
+        }
+    }
+
+    return content_type;
+}
+
 int coap_get_uri(coap_pkt_t *pkt, uint8_t *target)
 {
     uint8_t *opt_pos = coap_find_option(pkt, COAP_OPT_URI_PATH);
