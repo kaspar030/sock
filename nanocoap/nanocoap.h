@@ -15,6 +15,7 @@
 #define COAP_PORT               (5683)
 #define NANOCOAP_NOPTS_MAX      (16)
 #define NANOCOAP_URI_MAX        (64)
+#define NANOCOAP_QS_MAX         (64)
 
 #define COAP_OPT_URI_HOST       (3)
 #define COAP_OPT_OBSERVE        (6)
@@ -167,6 +168,12 @@ typedef struct {
     uint16_t payload_len;
     uint16_t options_len;
     coap_optpos_t options[NANOCOAP_NOPTS_MAX];
+#ifdef MODULE_GCOAP
+    uint8_t url[NANOCOAP_URL_MAX];
+    uint8_t qs[NANOCOAP_QS_MAX];
+    uint16_t content_type;
+    uint32_t observe_value;
+#endif
 } coap_pkt_t;
 
 typedef ssize_t (*coap_handler_t)(coap_pkt_t* pkt, uint8_t *buf, size_t len);
