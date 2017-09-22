@@ -99,7 +99,7 @@ int coap_parse(coap_pkt_t *pkt, uint8_t *buf, size_t len)
 
 #ifdef MODULE_GCOAP
     coap_get_uri(pkt, pkt->url);
-    pkt->observe_value = 0;
+    pkt->observe_value = UINT32_MAX;
     pkt->content_type = coap_get_content_type(pkt);
 #endif
 

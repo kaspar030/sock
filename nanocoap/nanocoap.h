@@ -286,6 +286,33 @@ static inline unsigned coap_method2flag(unsigned code)
     return (1<<(code-1));
 }
 
+#ifdef MODULE_GCOAP
+#define NANOCOAP_URL_MAX        NANOCOAP_URI_MAX
+/**
+ * @brief  Identifies a packet containing an Observe option.
+ */
+static inline bool coap_has_observe(coap_pkt_t *pkt)
+{
+    return pkt->observe_value != UINT32_MAX;
+}
+
+/**
+ * @brief  Clears the Observe option value from a packet.
+ */
+static inline void coap_clear_observe(coap_pkt_t *pkt)
+{
+    pkt->observe_value = UINT32_MAX;
+}
+
+/**
+ * @brief  Provides the value for the Observe option in a packet.
+ */
+static inline uint32_t coap_get_observe(coap_pkt_t *pkt)
+{
+    return pkt->observe_value;
+}
+#endif
+
 extern ssize_t coap_well_known_core_default_handler(coap_pkt_t* pkt, \
                                                     uint8_t *buf, size_t len);
 
