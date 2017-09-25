@@ -216,10 +216,13 @@ int coap_get_blockopt(coap_pkt_t *pkt, uint16_t option, uint32_t *blknum, unsign
         return -1;
     }
 
-    uint8_t option_byte = *optpos++;
-    int option_len = _decode_value(option_byte & 0xf, &optpos, pkt->payload);
+    int option_len;
+    uint16_t delta;
+
+    uint8_t *data_start = _parse_option(pkt, optpos, &delta, &option_len);
+    uint32_t blkopt = _decode_uint(data_start, option_len);
+
     DEBUG("nanocoap: blkopt len: %i\n", option_len);
-    uint32_t blkopt = _decode_uint(optpos+1, option_len);
     DEBUG("nanocoap: blkopt: 0x%08x\n", (unsigned)blkopt);
     *blknum = blkopt >> COAP_BLOCKWISE_NUM_OFF;
     *szx = blkopt & COAP_BLOCKWISE_SZX_MASK;
