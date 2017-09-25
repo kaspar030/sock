@@ -390,17 +390,16 @@ static uint32_t _decode_uint(uint8_t *pkt_pos, unsigned nbytes)
 
 static size_t _encode_uint(uint32_t *val)
 {
-    DEBUG("_encode_uint(): 0x%08x=", *val);
-    *val = htonl(*val);
-    uint8_t *val8 = (uint8_t *)val;
-    for (int i = 0; i < 4; i++) {
-        if (!val8[i]) {
-            *val >>= i*8;
-            DEBUG("0x%0*x\n", (4-i)*2, *val);
-            return 4-i;
-        }
+    uint8_t *tgt = (uint8_t *)val;
+    size_t size = 0;
+
+    uint32_t tmp = *val;
+    while (tmp) {
+        size++;
+        *tgt = tmp & 0xff;
+        tmp >>= 8;
     }
-    return 0;
+    return size;
 }
 
 static unsigned _put_delta_optlen(uint8_t *buf, unsigned offset, unsigned shift, unsigned val)
