@@ -3,8 +3,10 @@
 
 #include "nanocoap.h"
 
-ssize_t _test_handler(coap_pkt_t* pkt, uint8_t *buf, size_t len)
+ssize_t _test_handler(coap_pkt_t* pkt, uint8_t *buf, size_t len, void *context)
 {
+    (void)context;
+
     printf("_test_handler()\n");
     printf("coap pkt parsed. code=%u detail=%u payload_len=%u, len=%u 0x%02x\n",
             coap_get_code_class(pkt),
@@ -15,8 +17,10 @@ ssize_t _test_handler(coap_pkt_t* pkt, uint8_t *buf, size_t len)
     return coap_reply_simple(pkt, COAP_CODE_205, buf, len, COAP_FORMAT_TEXT, (uint8_t*)payload, 4);
 }
 
-ssize_t _blockwise_handler(coap_pkt_t* pkt, uint8_t *buf, size_t len)
+ssize_t _blockwise_handler(coap_pkt_t* pkt, uint8_t *buf, size_t len, void *context)
 {
+    (void)context;
+
     printf("_blockwise_handler()\n");
 
     uint32_t result = COAP_CODE_204;
@@ -42,8 +46,8 @@ ssize_t _blockwise_handler(coap_pkt_t* pkt, uint8_t *buf, size_t len)
 
 const coap_resource_t coap_resources[] = {
     COAP_WELL_KNOWN_CORE_DEFAULT_HANDLER,
-    { "/test", COAP_GET, _test_handler },
-    { "/blockwise", COAP_GET | COAP_POST | COAP_PUT, _blockwise_handler },
+    { "/blockwise", COAP_GET | COAP_POST | COAP_PUT, _blockwise_handler, NULL },
+    { "/test", COAP_GET, _test_handler, NULL },
 };
 
 const unsigned coap_resources_numof = sizeof(coap_resources) / sizeof(coap_resources[0]);
