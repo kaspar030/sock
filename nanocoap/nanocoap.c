@@ -256,11 +256,13 @@ ssize_t coap_handle_req(coap_pkt_t *pkt, uint8_t *resp_buf, unsigned resp_buf_le
     DEBUG("nanocoap: URI path: \"%s\"\n", uri);
 
     for (unsigned i = 0; i < coap_resources_numof; i++) {
-        if (! (coap_resources[i].methods & method_flag)) {
+        const coap_resource_t *resource = &coap_resources[i];
+
+        if (! (resource->methods & method_flag)) {
             continue;
         }
 
-        res = strcmp((char *)uri, coap_resources[i].path);
+        res = strcmp((char *)uri, resource->path);
         if (res > 0) {
             continue;
         }
@@ -268,7 +270,7 @@ ssize_t coap_handle_req(coap_pkt_t *pkt, uint8_t *resp_buf, unsigned resp_buf_le
             break;
         }
         else {
-            return coap_resources[i].handler(pkt, resp_buf, resp_buf_len);
+            return resource->handler(pkt, resp_buf, resp_buf_len, resource->context);
         }
     }
 
@@ -517,8 +519,10 @@ size_t coap_put_option_uri(uint8_t *buf, uint16_t lastonum, const char *uri, uin
 }
 
 ssize_t coap_well_known_core_default_handler(coap_pkt_t* pkt, uint8_t *buf, \
-                                             size_t len)
+                                             size_t len, void *context)
 {
+    (void)context;
+
     uint8_t *payload = buf + coap_get_total_hdr_len(pkt);
 
     uint8_t *bufpos = payload;
