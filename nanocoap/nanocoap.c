@@ -398,12 +398,24 @@ static size_t _encode_uint(uint32_t *val)
     uint8_t *tgt = (uint8_t *)val;
     size_t size = 0;
 
+    /* count number of used bytes */
     uint32_t tmp = *val;
-    while (tmp) {
+    while(tmp) {
         size++;
-        *tgt = tmp & 0xff;
         tmp >>= 8;
     }
+
+    /* convert to network byte order */
+    tmp = htonl(*val);
+
+    /* copy bytewise, starting with first actually used byte */
+    *val = 0;
+    uint8_t *tmp_u8 = (uint8_t *)&tmp;
+    tmp_u8 += (4 - size);
+    for (unsigned n = 0; n < size; n++) {
+        *tgt++ = *tmp_u8++;
+    }
+
     return size;
 }
 
