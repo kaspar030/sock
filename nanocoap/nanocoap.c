@@ -14,6 +14,7 @@
 
 static int _decode_value(unsigned val, uint8_t **pkt_pos_ptr, uint8_t *pkt_end);
 static uint32_t _decode_uint(uint8_t *pkt_pos, unsigned nbytes);
+static size_t _encode_uint(uint32_t *val);
 
 /* http://tools.ietf.org/html/rfc7252#section-3
  *  0                   1                   2                   3
@@ -179,6 +180,28 @@ int coap_get_uri(coap_pkt_t *pkt, uint8_t *target)
     return NANOCOAP_URI_MAX - left;
 }
 
+int coap_get_blockopt(coap_pkt_t *pkt, uint16_t option, uint32_t *blknum, unsigned *szx)
+{
+    uint8_t *optpos = coap_find_option(pkt, option);
+    if (!optpos) {
+        puts("notfound");
+        return -1;
+    }
+
+    int option_len;
+    uint16_t delta;
+
+    uint8_t *data_start = _parse_option(pkt, optpos, &delta, &option_len);
+    uint32_t blkopt = _decode_uint(data_start, option_len);
+
+    DEBUG("nanocoap: blkopt len: %i\n", option_len);
+    DEBUG("nanocoap: blkopt: 0x%08x\n", (unsigned)blkopt);
+    *blknum = blkopt >> COAP_BLOCKWISE_NUM_OFF;
+    *szx = blkopt & COAP_BLOCKWISE_SZX_MASK;
+
+    return (blkopt & 0x8) ? 1 : 0;
+}
+
 ssize_t coap_handle_req(coap_pkt_t *pkt, uint8_t *resp_buf, unsigned resp_buf_len)
 {
     if (coap_get_code_class(pkt) != COAP_REQ) {
@@ -335,6 +358,32 @@ static uint32_t _decode_uint(uint8_t *pkt_pos, unsigned nbytes)
     return ntohl(res);
 }
 
+static size_t _encode_uint(uint32_t *val)
+{
+    uint8_t *tgt = (uint8_t *)val;
+    size_t size = 0;
+
+    /* count number of used bytes */
+    uint32_t tmp = *val;
+    while(tmp) {
+        size++;
+        tmp >>= 8;
+    }
+
+    /* convert to network byte order */
+    tmp = htonl(*val);
+
+    /* copy bytewise, starting with first actually used byte */
+    *val = 0;
+    uint8_t *tmp_u8 = (uint8_t *)&tmp;
+    tmp_u8 += (4 - size);
+    for (unsigned n = 0; n < size; n++) {
+        *tgt++ = *tmp_u8++;
+    }
+
+    return size;
+}
+
 static unsigned _put_delta_optlen(uint8_t *buf, unsigned offset, unsigned shift, unsigned val)
 {
     if (val < 13) {
@@ -386,6 +435,18 @@ size_t coap_put_option_ct(uint8_t *buf, uint16_t lastonum, uint16_t content_type
     else {
         return coap_put_option(buf, lastonum, COAP_OPT_CONTENT_FORMAT, (uint8_t*)&content_type, sizeof(content_type));
     }
+}
+
+static size_t coap_put_option_block(uint8_t *buf, uint16_t lastonum, unsigned blknum, unsigned szx, int more, uint16_t option)
+{
+    uint32_t blkopt = (blknum << 4) | szx | (more ? 0x8 : 0);
+    size_t olen = _encode_uint(&blkopt);
+    return coap_put_option(buf, lastonum, option, (uint8_t*)&blkopt, olen);
+}
+
+size_t coap_put_option_block1(uint8_t *buf, uint16_t lastonum, unsigned blknum, unsigned szx, int more)
+{
+    return coap_put_option_block(buf, lastonum, blknum, szx, more, COAP_OPT_BLOCK1);
 }
 
 size_t coap_put_option_uri(uint8_t *buf, uint16_t lastonum, const char *uri, uint16_t optnum)

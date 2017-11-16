@@ -138,6 +138,16 @@
 #define COAP_NSTART             (1)
 #define COAP_DEFAULT_LEISURE    (5)
 
+/**
+ * @name Blockwise transfer (RFC7959)
+ * @{
+ */
+#define COAP_BLOCKWISE_NUM_OFF  (4)
+#define COAP_BLOCKWISE_MORE_OFF (3)
+#define COAP_BLOCKWISE_SZX_MASK (0x07)
+#define COAP_BLOCKWISE_SZX_MAX  (7)
+/** @} */
+
 typedef struct {
     uint8_t ver_t_tkl;
     uint8_t code;
@@ -181,6 +191,14 @@ ssize_t coap_reply_simple(coap_pkt_t *pkt,
         const uint8_t *payload, uint8_t payload_len);
 
 ssize_t coap_handle_req(coap_pkt_t *pkt, uint8_t *resp_buf, unsigned resp_buf_len);
+
+int coap_get_blockopt(coap_pkt_t *pkt, uint16_t option, uint32_t *blknum, unsigned *szx);
+size_t coap_put_option_block1(uint8_t *buf, uint16_t lastonum, unsigned blknum, unsigned szx, int more);
+
+static inline unsigned coap_szx2size(unsigned szx)
+{
+    return (1 << (szx + 4));
+}
 
 ssize_t coap_build_hdr(coap_hdr_t *hdr, unsigned type, uint8_t *token, size_t token_len, unsigned code, uint16_t id);
 size_t coap_put_option(uint8_t *buf, uint16_t lastonum, uint16_t onum, uint8_t *odata, size_t olen);
